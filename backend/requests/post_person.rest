@@ -1,0 +1,38 @@
+POST http://localhost:3001/api/persons/
+content-type: application/json
+
+{
+    "id": "",
+    "name": "Post Test",
+    "number": "40-66-5321234"
+}
+
+### No number
+POST http://localhost:3001/api/persons/
+content-type: application/json
+
+{
+    "id": "",
+    "name": "Post Test",
+    "number": ""
+}
+
+### No name
+POST http://localhost:3001/api/persons/
+content-type: application/json
+
+{
+    "id": "",
+    "name": "",
+    "number": "40-66-5321234"
+}
+
+### Name already exists in collection
+POST http://localhost:3001/api/persons/
+content-type: application/json
+
+{
+    "id": "",
+    "name": "Arto Hellas",
+    "number": "40-66-5321234"
+}
