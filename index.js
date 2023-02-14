@@ -1,7 +1,9 @@
 const express = require('express')
 const morgan = require('morgan')
+const cors = require('cors')
 const app = express()
 app.use(express.json())
+app.use(cors())
 // app.use(requestLogger)
 // app.use(unknownEndpoint)
 morgan.token('body', function (req, res) { return JSON.stringify(req.body) })
@@ -27,7 +29,7 @@ let persons = [
     },
     { 
       "id": 4,
-      "name": "Mary Poppendieck", 
+      "name": "Mary Poppendieck (be)", 
       "number": "39-23-6423122"
     }
 ]
