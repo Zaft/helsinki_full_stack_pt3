@@ -4,15 +4,14 @@ const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
 const app = express()
+app.use(express.static('build'))
 app.use(express.json())
 app.use(cors())
-// app.use(requestLogger)
 // app.use(unknownEndpoint)
 morgan.token('body', function (req, res) { return JSON.stringify(req.body) })
-app.use(express.static('build'))
 // morgan('tiny')
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
-
+const mongoose = require('mongoose')
 
 let persons = [
     { 
@@ -46,30 +45,48 @@ app.get('/api/persons/', (request, response) => {
     console.log("getAll")
     Person.find({}).then(persons => {
         response.json(persons)
-        // result.forEach(person => {
-        //   console.log(`${person.name} ${person.number}`)
-        // })
-        // mongoose.connection.close()
     })
 })
 
 app.delete('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id);
-    // console.log('delete id', id)
-    persons = persons.filter(p => p.id !== id)
-    response.status(204).end()
-    // console.log('after delete, ', persons)
+    console.log('delete id', id)
+    Person.findByIdAndDelete(request.params.id)
+        .then(result => {
+            response.status(204).end()
+        })
+        .catch(error => next(error))
 })
 
-app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id);
-    // console.log(id)
-    let person = persons.find(p => p.id === id)
-    if (person) {
-        response.json(person)
-    } else {
-        response.status(404).end()
+app.get('/api/persons/:id', (request, response, next) => {
+    // const id = mongoose.Types.ObjectId(request.params.id)
+    const id = request.params.id
+    console.log("get person by id ", id)
+    Person.findById(id)
+        .then(person => {
+            if (person) {
+                response.json(person)
+            } else {
+                response.status(404).end()
+            }
+        })
+        .catch(error => next(error))
+})
+
+app.put('/api/persons/:id', (request, response, next) => {
+    console.log("put body", request.body)
+    console.log("put params", request.params)
+    const body = request.body
+    const person = {
+        name: body.name,
+        number: body.number
     }
+
+    Person.findByIdAndUpdate(request.params.id, person, { new: true })
+        .then(updatedPerson => {
+            response.json(updatedPerson)
+        })
+        .catch(error => next(error))
 })
 
 app.post('/api/persons', (request, response) => {
@@ -88,46 +105,42 @@ app.post('/api/persons', (request, response) => {
         })
     }
 
-    let nameExists = persons.find(p => p.name.toLocaleLowerCase() == body.name.toLocaleLowerCase())
-    if (nameExists) {
-        return response.status(409).json({
-            error: 'name must be unique'
-        })
-    }
-
-    // console.log('POST person ', request.body)
-    let id = Math.floor(Math.random() * 5000)
     const person = new Person({
         name: body.name,
         number: body.number
     })
-    console.log("new person", person)
-    person.save().then(person => {
+    // console.log("new person", person)
+    Person.create(person).then(person => {
         console.log('person saved!')
         response.json(person)
     })
 })
 
 app.get('/api/info/', (request, response) => {
-    const dateObject = new Date();
-    // current date
-    // adjust 0 before single digit date
-    const date = (`0 ${dateObject.getDate()}`).slice(-2);
-    // current month
-    const month = (`0 ${dateObject.getMonth() + 1}`).slice(-2);
-    // current year
-    const year = dateObject.getFullYear();
-    // current hours
-    const hours = dateObject.getHours();
-    // current minutes
-    const minutes = dateObject.getMinutes();
-    // current seconds
-    const seconds = dateObject.getSeconds();
-    const ts = new Date(Date.now()).toLocaleString();
-    const tz = new Date().getTimezoneOffset()
 
-    response.send(`<p>Phonebook has info for ${persons.length} people</p>
-        <p>${ts}</p>`)
+    Person.find({}).then(persons => {
+        // response.json(persons)
+        const personCount = persons.length
+        const dateObject = new Date();
+        // current date
+        // adjust 0 before single digit date
+        const date = (`0 ${dateObject.getDate()}`).slice(-2);
+        // current month
+        const month = (`0 ${dateObject.getMonth() + 1}`).slice(-2);
+        // current year
+        const year = dateObject.getFullYear();
+        // current hours
+        const hours = dateObject.getHours();
+        // current minutes
+        const minutes = dateObject.getMinutes();
+        // current seconds
+        const seconds = dateObject.getSeconds();
+        const ts = new Date(Date.now()).toLocaleString();
+        const tz = new Date().getTimezoneOffset()
+        response.send(`<p>Phonebook has info for ${personCount} people</p>
+            <p>${ts}</p>`)
+    })
+
 })
 
 const requestLogger = (request, response, next) => {
@@ -137,12 +150,25 @@ const requestLogger = (request, response, next) => {
     console.log('---')
     next()
 }
+app.use(requestLogger)
 
 const unknownEndpoint = (request, response) => {
     response.status(404).send({ error: 'unknown endpoint' })
 }
+app.use(unknownEndpoint)
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
+
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+  
+    if (error.name === 'CastError') {
+      return response.status(400).send({ error: 'malformatted id' })
+    } 
+  
+    next(error)
+  }
+app.use(errorHandler)

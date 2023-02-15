@@ -1,0 +1,7 @@
+PUT http://localhost:3001/api/persons/63ed1b216f64583c0621f65d
+content-type: application/json
+
+{
+    "name": "MongoTom",
+    "number": "666"
+}
