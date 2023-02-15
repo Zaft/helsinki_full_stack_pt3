@@ -1,3 +1,5 @@
+require('dotenv').config()
+const Person = require('./models/people')
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
@@ -40,7 +42,15 @@ app.get('/', (request, response) => {
   })
 
 app.get('/api/persons/', (request, response) => {
-    response.json(persons)
+    // response.json(persons)
+    console.log("getAll")
+    Person.find({}).then(persons => {
+        response.json(persons)
+        // result.forEach(person => {
+        //   console.log(`${person.name} ${person.number}`)
+        // })
+        // mongoose.connection.close()
+    })
 })
 
 app.delete('/api/persons/:id', (request, response) => {
@@ -87,15 +97,15 @@ app.post('/api/persons', (request, response) => {
 
     // console.log('POST person ', request.body)
     let id = Math.floor(Math.random() * 5000)
-    const person = {
-        id: id,
+    const person = new Person({
         name: body.name,
         number: body.number
-    }
-    persons = persons.concat(person)
-    // console.log("persons ", persons)
-    
-    response.json(person)
+    })
+    console.log("new person", person)
+    person.save().then(person => {
+        console.log('person saved!')
+        response.json(person)
+    })
 })
 
 app.get('/api/info/', (request, response) => {
