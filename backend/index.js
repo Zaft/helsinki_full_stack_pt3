@@ -36,9 +36,16 @@ let persons = [
     }
 ]
 
+const personSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        minLength: 3
+    }
+})
+
 app.get('/', (request, response) => {
     response.send('<h1>Hello World!</h1>')
-  })
+})
 
 app.get('/api/persons/', (request, response) => {
     // response.json(persons)
@@ -76,44 +83,40 @@ app.get('/api/persons/:id', (request, response, next) => {
 app.put('/api/persons/:id', (request, response, next) => {
     console.log("put body", request.body)
     console.log("put params", request.params)
-    const body = request.body
-    const person = {
-        name: body.name,
-        number: body.number
-    }
 
-    Person.findByIdAndUpdate(request.params.id, person, { new: true })
+    const { name, number } = request.body
+
+    Person.findByIdAndUpdate(
+        request.params.id,
+        { name, number}, 
+        { new: true, runValidators: true, context: 'query' })
         .then(updatedPerson => {
             response.json(updatedPerson)
         })
         .catch(error => next(error))
 })
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
     // console.log("request headers", request.headers)
     // console.log("request body", request.body)
     let body = request.body
-    if (!body) {
-        return response.status(400).json({
-            error: 'content missing'
-        })
-    }
 
-    if (body.name.length === 0 || body.number.length === 0) {
-        return response.status(400).json({
-            error: 'name and number are required fields'
-        })
-    }
+    // if (body.name.length === 0 || body.number.length === 0) {
+    //     return response.status(400).json({
+    //         error: 'name and number are required fields'
+    //     })
+    // }
 
     const person = new Person({
         name: body.name,
         number: body.number
     })
-    // console.log("new person", person)
-    Person.create(person).then(person => {
-        console.log('person saved!')
-        response.json(person)
-    })
+
+    person.save()
+        .then(savedPerson => {
+            response.json(savedPerson)
+        })
+        .catch(error => next(error))
 })
 
 app.get('/api/info/', (request, response) => {
@@ -140,8 +143,9 @@ app.get('/api/info/', (request, response) => {
         response.send(`<p>Phonebook has info for ${personCount} people</p>
             <p>${ts}</p>`)
     })
-
 })
+ 
+// Below the following add's middlewares 
 
 const requestLogger = (request, response, next) => {
     console.log('Method:', request.method)
@@ -167,8 +171,10 @@ const errorHandler = (error, request, response, next) => {
   
     if (error.name === 'CastError') {
       return response.status(400).send({ error: 'malformatted id' })
-    } 
+    } else if (error.name === 'ValidationError') {
+        return response.status(400).json({ error: error.message })
+    }
   
     next(error)
-  }
+}
 app.use(errorHandler)

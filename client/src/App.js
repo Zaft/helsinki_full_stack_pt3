@@ -38,8 +38,8 @@ const App = () => {
       const newPersonObject = {
         name: newName,
         number: newNumber
-        }
-        personService
+      }
+      personService
         .create(newPersonObject)
         .then(newPerson => {
           // console.log("newPerson", newPerson)
@@ -49,7 +49,12 @@ const App = () => {
             `Added ${newPerson.name} to phonebook`
           )
           setTimeout(() => { setMessage(null)}, 5000)
-        })
+
+      }).catch(error => {
+        setIsError(true)
+        setMessage(error.response.data.error)
+        console.log(error.response.data.error)
+      })
 
       setNewName('')
       setNewNumber('')
