@@ -1,4 +1,4 @@
-# fly.toml file generated for fullstack on 2023-02-14T08:38:37-08:00
+# fly.toml file generated for fullstack on 2023-02-20T14:18:20-08:00
 
 app = "fullstack"
 kill_signal = "SIGINT"
